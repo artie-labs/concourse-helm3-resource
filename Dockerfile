@@ -8,7 +8,6 @@ LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 ARG KUBERNETES_VERSION=1.27.11
 ARG GCLOUD_VERSION=416.0.0
 ARG DOCTL_VERSION=1.57.0
-# https://pypi.org/project/awscli/
 ARG AWSCLI_VERSION=2.13.25-r0
 ARG HELM_PLUGINS_TO_INSTALL="https://github.com/databus23/helm-diff"
 
