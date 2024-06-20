@@ -219,7 +219,8 @@ setup_helm() {
       value=$(echo "$env_vars" | jq -r --arg key "$key" '.[$key]')
 #      TODO: Remove echo once confirmed
       echo "Setting environment variable $key=$value"
-      EXPORT "$key"="$value"
+      export "$key"="$value"
+      env
     done
   fi
 
