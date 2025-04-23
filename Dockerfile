@@ -7,9 +7,9 @@ LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 # Versions for gcloud, kubectl, doctl, awscli
 # K8 versions: https://kubernetes.io/releases/
 ARG KUBERNETES_VERSION=1.31.7
-ARG GCLOUD_VERSION=416.0.0
+# gcloud version: https://cloud.google.com/sdk/docs/release-notes
+ARG GCLOUD_VERSION=500.0.0
 ARG DOCTL_VERSION=1.57.0
-ARG AWSCLI_VERSION=2.15.14-r0
 ARG HELM_PLUGINS_TO_INSTALL="https://github.com/databus23/helm-diff"
 
 
@@ -17,7 +17,7 @@ ARG HELM_PLUGINS_TO_INSTALL="https://github.com/databus23/helm-diff"
 ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 
 #install packages
-RUN apk add --update --upgrade --no-cache jq bash curl git gettext libintl py-pip aws-cli=${AWSCLI_VERSION}
+RUN apk add --update --upgrade --no-cache jq bash curl git gettext libintl py-pip aws-cli
 
 #install kubectl
 RUN curl -sL -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl; \
