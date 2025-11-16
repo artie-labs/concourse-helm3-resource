@@ -147,6 +147,7 @@ setup_aws_kubernetes() {
     access_key_id=$(jq -r '.source.aws.user.access_key_id // ""' < $payload)
     secret_access_key=$(jq -r '.source.aws.user.secret_access_key // ""' < $payload)
     role_arn=$(jq -r '.source.aws.user.role_arn // ""' < $payload)
+    user_external_id=$(jq -r '.source.aws.user.external_id // ""' < $payload)
 
     if [ -z "$access_key_id" ] || [ -z "$secret_access_key" ]; then
       echo "invalid user auth payload for AWS EKS, please pass all required params"
@@ -166,6 +167,11 @@ setup_aws_kubernetes() {
       echo "[assume_role]
       role_arn=${role_arn}
       source_profile=${profile:-default}" >> ~/.aws/credentials
+
+      # Add external_id to the profile if provided
+      if [ -n "$user_external_id" ]; then
+        echo "    external_id=${user_external_id}" >> ~/.aws/credentials
+      fi
 
       aws eks update-kubeconfig --region ${region} --name ${cluster_name} --profile assume_role
     else

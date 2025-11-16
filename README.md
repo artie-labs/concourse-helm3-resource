@@ -91,6 +91,7 @@ resource_types:
 -   `aws.user.access_key_id` _Optional._ Access key id of the user credential used for EKS authentication
 -   `aws.user.secret_access_key` _Optional._ Secret access key of the user credential used for EKS authentication
 -   `aws.user.role_arn` _Optional._ If this is provided, we will use the user credentials to assume into the role
+-   `aws.user.external_id` _Optional._ External ID to use when assuming the role (for enhanced security)
 
 ## Behavior
 
@@ -232,6 +233,8 @@ resources:
       user:
         access_key_id: <access_key_id>
         secret_access_key: <secret_access_key>
+        role_arn: arn:aws:iam::<aws_account_id>:role/<role_to_assume>  # Optional
+        external_id: my-external-id  # Optional: required if role requires external_id
 ```
 
 Add to job:
