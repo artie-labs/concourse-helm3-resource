@@ -87,6 +87,7 @@ resource_types:
 -   `aws.profile` _Optional._ Name of the AWS profile to store/use credentials, defaults to `default`. Only used for non-role based authentication
 -   `aws.role.arn` _Optional._ ARN of the role to be used for EKS authentication
 -   `aws.role.session_name` _Optional._ Session name of the assume-role session
+-   `aws.role.external_id` _Optional._ External ID to use when assuming the role (for enhanced security)
 -   `aws.user.access_key_id` _Optional._ Access key id of the user credential used for EKS authentication
 -   `aws.user.secret_access_key` _Optional._ Secret access key of the user credential used for EKS authentication
 -   `aws.user.role_arn` _Optional._ If this is provided, we will use the user credentials to assume into the role
@@ -215,6 +216,7 @@ resources:
       role:
         arn: arn:aws:iam::<aws_account_id>:role/<my_eks_role>
         session_name: EKSAssumeRoleSession
+        external_id: my-external-id  # Optional: for enhanced security
 ```
 
 Amazon EKS using user

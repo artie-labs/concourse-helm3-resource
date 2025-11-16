@@ -114,12 +114,20 @@ setup_aws_kubernetes() {
     echo "proceed with assume-role to set up kubeconfig."
     role_arn=$(jq -r '.source.aws.role.arn // ""' < $payload)
     role_session_name=$(jq -r '.source.aws.role.session_name // ""' < $payload)
+    role_external_id=$(jq -r '.source.aws.role.external_id // ""' < $payload)
 
     echo "role_arn=${role_arn} role_session_name=${role_session_name}"
     if [ -z "${role_arn}" ]; then
       echo "invalid role arn for AWS EKS"
       exit 1
     fi
+
+    # Build external_id parameter if provided
+    external_id_opt=""
+    if [ -n "$role_external_id" ]; then
+      external_id_opt="--external-id ${role_external_id}"
+    fi
+
     # `aws eks update-kubeconfig --role-arn` only populates the `role-arn` to be used 
     # for `get-token`, and the role specified is not used for the initial describe cluster action
     # name-based discovery is limited to same account as whatever profile is being used.
@@ -128,6 +136,7 @@ setup_aws_kubernetes() {
     $(aws sts assume-role \
     --role-arn ${role_arn} \
     --role-session-name ${role_session_name:-EKSAssumeRoleSession} \
+    ${external_id_opt} \
     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
     --output text)) aws eks update-kubeconfig --region ${region} --name ${cluster_name} --role-arn ${role_arn}
 
