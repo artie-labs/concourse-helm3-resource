@@ -187,6 +187,70 @@ setup_aws_kubernetes() {
   echo "done setting up kubeconfig for EKS"
 }
 
+setup_azure_kubernetes() {
+#  Need to pass in:
+#  source.azure.subscription_id
+#  source.azure.resource_group
+#  source.azure.cluster_name
+#  source.azure.service_principal (optional)
+  payload=$1
+  source=$2
+
+  subscription_id=$(jq -r '.source.azure.subscription_id // ""' < $payload)
+  resource_group=$(jq -r '.source.azure.resource_group // ""' < $payload)
+  cluster_name=$(jq -r '.source.azure.cluster_name // ""' < $payload)
+
+  if [ -z "$subscription_id" ] || [ -z "$resource_group" ] || [ -z "$cluster_name" ]; then
+    echo "invalid payload for Azure AKS, please pass all required params (subscription_id, resource_group, cluster_name)"
+    exit 1
+  fi
+
+  use_service_principal_auth=$(jq -r '.source.azure|has("service_principal")' < $payload)
+
+  if [ "${use_service_principal_auth}" = true ]; then
+    echo "proceed with service principal to set up kubeconfig."
+    
+    tenant_id=$(jq -r '.source.azure.service_principal.tenant_id // ""' < $payload)
+    client_id=$(jq -r '.source.azure.service_principal.client_id // ""' < $payload)
+    client_secret=$(jq -r '.source.azure.service_principal.client_secret // ""' < $payload)
+
+    if [ -z "$tenant_id" ] || [ -z "$client_id" ] || [ -z "$client_secret" ]; then
+      echo "invalid service principal auth payload for Azure AKS, please pass all required params (tenant_id, client_id, client_secret)"
+      exit 1
+    fi
+
+    echo "tenant_id=${tenant_id} client_id=${client_id}"
+    
+    # Login using service principal
+    az login --service-principal \
+      --username "${client_id}" \
+      --password "${client_secret}" \
+      --tenant "${tenant_id}" \
+      --output none
+
+    # Set the subscription
+    az account set --subscription "${subscription_id}"
+
+  else
+    # defaults to use managed identity
+    echo "no service principal specified. Fallback to use managed identity of the instance to set up kubeconfig"
+    
+    # Login using managed identity (for Concourse workers running in Azure)
+    az login --identity --output none
+    
+    # Set the subscription
+    az account set --subscription "${subscription_id}"
+  fi
+
+  # Get AKS credentials and configure kubectl
+  az aks get-credentials \
+    --resource-group "${resource_group}" \
+    --name "${cluster_name}" \
+    --overwrite-existing
+
+  echo "done setting up kubeconfig for AKS"
+}
+
 setup_gcp_kubernetes() {
   payload=$1
   source=$2
@@ -330,6 +394,7 @@ setup_resource() {
   do_access_token=$(jq -r '.source.digitalocean.access_token // "false"' < $1)
   gcloud_cluster_auth=$(jq -r '.source.gcloud_cluster_auth // "false"' < $1)
   aws_cluster_auth=$(jq -r '.source|has("aws")' < $1)
+  azure_cluster_auth=$(jq -r '.source|has("azure")' < $1)
 
   if [ "$do_cluster_id" != "false" ] && [ "$do_access_token" != "false" ]; then
     echo "Initializing digitalocean..."
@@ -340,6 +405,9 @@ setup_resource() {
   elif [ "$aws_cluster_auth" = "true" ]; then
       echo "Initializing kubectl access using AWS credentials"
       setup_aws_kubernetes $1 $2
+  elif [ "$azure_cluster_auth" = "true" ]; then
+      echo "Initializing kubectl access using Azure credentials"
+      setup_azure_kubernetes $1 $2
   else
     echo "Initializing kubectl using certificates"
     setup_kubernetes $1 $2

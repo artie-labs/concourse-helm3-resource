@@ -17,7 +17,9 @@ ARG HELM_PLUGINS_TO_INSTALL="https://github.com/databus23/helm-diff"
 ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 
 #install packages
-RUN apk add --update --upgrade --no-cache jq bash curl git gettext libintl py-pip aws-cli
+RUN apk add --update --upgrade --no-cache jq bash curl git gettext libintl py-pip aws-cli && \
+    pip install --upgrade pip && \
+    pip install azure-cli
 
 #install kubectl
 RUN curl -sL -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl; \
