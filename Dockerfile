@@ -4,12 +4,14 @@ FROM --platform=linux/amd64 alpine/helm:4.3.1
 
 LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 
-# Versions for gcloud, kubectl, doctl, awscli (azure-cli is installed unpinned from pip)
+# Versions for gcloud, kubectl, doctl, awscli, azure-cli
 # K8 versions: https://kubernetes.io/releases/
 ARG KUBERNETES_VERSION=1.35.9
 ARG GCLOUD_VERSION=590.0.0
 ARG DOCTL_VERSION=1.186.0
 ARG AWSCLI_VERSION=2.34.63-r0
+# azure-cli versions: https://pypi.org/project/azure-cli/#history
+ARG AZURE_CLI_VERSION=2.91.0
 ARG HELM_DIFF_VERSION=3.15.15
 # helm-diff release signing key: https://github.com/databus23/helm-diff#helm-4
 ARG HELM_DIFF_KEY_FINGERPRINT=C5645EF47482257A1F806D2BEA17A2A206AFF8CD
@@ -22,7 +24,7 @@ ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 RUN apk add --update --upgrade --no-cache jq bash curl git gettext gnupg libintl py-pip aws-cli=${AWSCLI_VERSION} && \
     apk add --no-cache --virtual .build-deps gcc musl-dev python3-dev libffi-dev openssl-dev cargo make && \
     pip install --break-system-packages --upgrade pip && \
-    pip install --break-system-packages azure-cli && \
+    pip install --break-system-packages azure-cli==${AZURE_CLI_VERSION} && \
     apk del .build-deps
 
 #install kubectl
