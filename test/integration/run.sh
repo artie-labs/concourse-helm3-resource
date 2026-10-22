@@ -160,6 +160,20 @@ t_debug() {
   resource out '{"debug": true}' && has '--dry-run=client' && has '^kind: Deployment' \
     && ok "$(helm4 history app -n it -o json | jq 'length')" "$before"
 }
+t_profile() {
+  resource out '{"profile": true}' && has 'helm upgrade took [0-9]+s' || return 1
+  sed -n '/-----BEGIN HELM CPU PROFILE-----/,/-----END HELM CPU PROFILE-----/{//!p;}' "$LOG" \
+    | base64 -d > "$WORK/cpu.pprof" || return 1
+  # pprof profiles are gzipped protobuf
+  ok "$(head -c 2 "$WORK/cpu.pprof" | od -An -tx1 | tr -d ' ')" 1f8b
+}
+t_timing() {
+  local canary=timing-canary-7f3a
+  resource out "{\"timing\": true, \"server_side\": \"true\", \"force_conflicts\": true, \"override_values\": [{\"key\": \"message\", \"value\": \"$canary\", \"hide\": true}]}" \
+    && has '^[0-9]{2}:[0-9]{2}:[0-9]{2} level=DEBUG msg="Patched resource"' && has 'has been upgraded' \
+    && has 'helm upgrade took [0-9]+s' && lacks "$canary" && lacks 'COMPUTED VALUES|^MANIFEST:' \
+    && [[ "$(kc -n it get cm -o yaml)" == *"$canary"* ]]
+}
 t_validation() {
   ! resource out '{"server_side": "yes"}' && has 'server_side must be' || return 1
   ! resource out '{"wait_strategy": "hookOnly"}' && has 'wait_strategy must be' || return 1
@@ -290,6 +304,8 @@ run_case e2e "stable repo is off by default" t_stable_off
 run_case e2e "deprecated atomic and force still work" t_legacy_params
 run_case e2e "force_replace with server_side true is rejected" t_force_replace_ssa
 run_case e2e "debug renders without releasing" t_debug
+run_case e2e "profile prints a CPU profile" t_profile
+run_case e2e "timing prints a timestamped log without values" t_timing
 run_case e2e "invalid params are rejected" t_validation
 run_case e2e "Helm 3 release moves to server-side apply" t_helm3_migration
 run_case e2e "conflict with another field manager fails" t_conflict

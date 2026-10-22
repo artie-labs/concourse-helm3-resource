@@ -223,6 +223,8 @@ Deploy an helm chart
 -   `kubeconfig`: _Optional._ String containing a kubeconfig. Overrides `kubeconfig_path` and source configuration for cluster, token, and admin config.
 -   `kubeconfig_path`: _Optional._ File containing a kubeconfig. Overrides source configuration for cluster, token, and admin config.
 -   `show_diff`: _Optional._ Show the diff that is applied if upgrading an existing successful release. (Default: false)
+-   `profile`: _Optional._ Record a Go CPU profile of `helm upgrade` and print it, base64-encoded, to the build log along with the upgrade's wall-clock time. The profile holds no values or manifests. Time spent waiting on the network does not show up in a CPU profile, so compare its total samples with the wall-clock time. (Default: false)
+-   `timing`: _Optional._ Run `helm upgrade` with `--debug` and print Helm's debug log with a timestamp on each line, to show where an upgrade spends its time. Only the first line of the upgrade output is kept, because `--debug` also prints values and the rendered manifest. (Default: false)
 -   `diff_opts`: _Optional._ Additional options to be appended to `helm diff` command. (Default: "")
 -   `post_renderer`: _Optional._ Path to an executable inside the chart directory, or the name of an installed postrenderer plugin, used to post-render the manifests for the upgrade and the diff.
 -   `skip_missing_values:` _Optional._ Missing values files are skipped if they are specified in the values but do not exist.(Default false)

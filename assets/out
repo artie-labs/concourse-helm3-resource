@@ -45,6 +45,8 @@ reuse_values=$(jq -r '.params.reuse_values // "false"' < $payload)
 reset_values=$(jq -r '.params.reset_values // "false"' < $payload)
 wait=$(jq -r '.params.wait // 0' < $payload)
 check_is_ready=$(jq -r '.params.check_is_ready // "false"' < $payload)
+profile=$(jq -r '.params.profile // "false"' < $payload)
+timing=$(jq -r '.params.timing // "false"' < $payload)
 wait_for_jobs=$(jq -r '.params.wait_for_jobs // "false"' < $payload)
 wait_strategy=$(jq -r '.params.wait_strategy // "watcher"' < $payload)
 timeout=$(jq -r '.params.timeout // "5m0s"' < $payload)
@@ -400,8 +402,32 @@ helm_upgrade() {
   fi
 
   echo "Running command helm ${helm_echo_args[@]} | tee $logfile"
-  upgrade_result=$($helm_bin "${helm_args[@]}" | tee "$logfile")
+  upgrade_env=()
+  if [ "$profile" = true ]; then
+    profile_file=$(mktemp /tmp/helm-cpu.XXXXXX)
+    upgrade_env+=("HELM_PPROF_CPU_PROFILE=$profile_file")
+  fi
+  upgrade_start=$(date +%s)
+  if [ "$timing" = true ]; then
+    # --debug also prints values and the manifest on stdout, so keep only the first line of it
+    # and timestamp the debug log on stderr, which names resources but not their contents
+    upgrade_result=$(env "${upgrade_env[@]}" $helm_bin "${helm_args[@]}" --debug \
+      2> >(while IFS= read -r line; do echo "$(date +%T) $line"; done >&2) | sed -n 1p | tee "$logfile")
+  else
+    upgrade_result=$(env "${upgrade_env[@]}" $helm_bin "${helm_args[@]}" | tee "$logfile")
+  fi
   echo "$upgrade_result"
+  if [ "$profile" = true ] || [ "$timing" = true ]; then
+    echo "helm upgrade took $(( $(date +%s) - upgrade_start ))s"
+  fi
+  if [ "$profile" = true ]; then
+    # The CPU profile holds only function names and samples, no values, so it is safe to print
+    echo "Helm CPU profile. Decode with: base64 -d > cpu.pprof && go tool pprof -top cpu.pprof"
+    echo "-----BEGIN HELM CPU PROFILE-----"
+    base64 "$profile_file"
+    echo "-----END HELM CPU PROFILE-----"
+    rm -f "$profile_file"
+  fi
 
   deployed_release=$(echo $upgrade_result | head -n 1 | awk '{ print $2 }')
 
