@@ -1,3 +1,25 @@
+# Helm is built from Artie's fork instead of taken from the base image, to carry the concurrent
+# update loop (https://github.com/artie-labs/helm/pull/1) ahead of an upstream release. HELM_REF
+# pins the exact commit; HELM_VERSION is what `helm version` prints in build logs.
+ARG HELM_REPO=https://github.com/artie-labs/helm.git
+ARG HELM_REF=0d70c8af7f3503ed35665a5c3d2534ec827b92ef
+ARG HELM_VERSION=v4.3.1-concurrent-update.1
+
+# Runs on the build machine's own platform and cross-compiles for the target, so a multi-arch
+# build does not compile under emulation. The result is a static binary (CGO_ENABLED=0).
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS helm-build
+ARG HELM_REPO
+ARG HELM_REF
+ARG HELM_VERSION
+ARG TARGETOS
+ARG TARGETARCH
+RUN apk add --no-cache bash git make
+RUN git clone --filter=blob:none --no-checkout ${HELM_REPO} /helm && \
+    git -C /helm checkout --detach ${HELM_REF}
+WORKDIR /helm
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build VERSION=${HELM_VERSION} && \
+    test -x bin/helm
+
 FROM alpine/helm:4.3.1
 # Helm supported version along with K8 version: https://helm.sh/docs/topics/version_skew/
 # List of Helm images: https://hub.docker.com/r/alpine/helm/tags
@@ -50,6 +72,9 @@ RUN mkdir -p /usr/local/gcloud \
     ## auth package is split out now, need explicit install
     ## --quiet disables interactive prompts
     && gcloud components install gke-gcloud-auth-plugin --quiet
+
+# Replace the base image's helm with the build from Artie's fork (see the top of this file)
+COPY --from=helm-build /helm/bin/helm /usr/bin/helm
 
 #copy scripts
 ADD assets /opt/resource
