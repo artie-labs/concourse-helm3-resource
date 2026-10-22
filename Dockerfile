@@ -1,9 +1,10 @@
-# Helm is built from Artie's fork instead of taken from the base image, to carry the concurrent
-# update loop (https://github.com/artie-labs/helm/pull/1) ahead of an upstream release. HELM_REF
-# pins the exact commit; HELM_VERSION is what `helm version` prints in build logs.
+# Helm is built from Artie's fork instead of taken from the base image, to carry two fixes from
+# https://github.com/artie-labs/helm/pull/1 ahead of an upstream release: API discovery runs once per
+# process instead of once per object in Build, and objects of the same kind are applied concurrently.
+# HELM_REF pins the exact commit; HELM_VERSION is what `helm version` prints in build logs.
 ARG HELM_REPO=https://github.com/artie-labs/helm.git
-ARG HELM_REF=0d70c8af7f3503ed35665a5c3d2534ec827b92ef
-ARG HELM_VERSION=v4.3.1-concurrent-update.1
+ARG HELM_REF=2e4c18fb6
+ARG HELM_VERSION=v4.3.1-concurrent-update.2
 
 # Runs on the build machine's own platform and cross-compiles for the target, so a multi-arch
 # build does not compile under emulation. The result is a static binary (CGO_ENABLED=0).
