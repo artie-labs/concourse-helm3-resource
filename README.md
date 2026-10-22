@@ -44,13 +44,13 @@ resource_types:
 
 ## Helm binary
 
-Since 2.0.0-rc1 the image does not use the `helm` from `alpine/helm`. The Dockerfile builds Helm
+Since 2.0.0 the image does not use the `helm` from `alpine/helm`. The Dockerfile builds Helm
 from [Artie's fork](https://github.com/artie-labs/helm) at the commit pinned in `HELM_REF`, which
 carries [artie-labs/helm#1](https://github.com/artie-labs/helm/pull/1). Stock Helm re-runs API
 discovery for every object it builds (two round trips each, three builds per upgrade) and applies
 objects one at a time; on a release with hundreds of objects deployed across a region boundary that
 was almost the whole upgrade. The fork runs discovery once and applies the objects of each kind
-concurrently. `helm version` in a build log shows `v4.3.1-concurrent-update.2` for this binary.
+concurrently. `helm version` in a build log shows `v4.3.1-fast` for this binary.
 Override `HELM_REF` and `HELM_VERSION` as build args to try another commit.
 
 ## Upgrading to 2.0.0
