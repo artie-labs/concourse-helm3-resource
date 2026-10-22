@@ -14,7 +14,6 @@ FILTER="${1:-}"
 K3S_IMAGE="${K3S_IMAGE:-rancher/k3s:v1.35.4-k3s1}"
 POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
 HELM3_IMAGE="${HELM3_IMAGE:-alpine/helm:3.14.4}"
-HELM_DIFF_URL="https://github.com/databus23/helm-diff/releases/download/v3.15.15/diff-3.15.15-linux-amd64.tgz"
 HELM_DIFF_KEY="https://github.com/databus23.gpg"
 
 NET="helm-resource-it-$$"
@@ -48,6 +47,10 @@ setup() {
     echo "Building $IMAGE"
     docker build -q -t "$IMAGE" "$ROOT" >/dev/null || die "image build failed"
   fi
+
+  local arch; arch=$(docker image inspect -f '{{.Architecture}}' "$IMAGE") || die "cannot inspect $IMAGE"
+  HELM_DIFF_URL="https://github.com/databus23/helm-diff/releases/download/v3.15.15/diff-3.15.15-linux-$arch.tgz"
+  echo "Testing $IMAGE ($arch)"
 
   cp -R "$ROOT/test/integration/fixtures" "$WORK/src"
   docker network create "$NET" >/dev/null || die "network create failed"

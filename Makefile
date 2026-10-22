@@ -7,11 +7,15 @@ all: build push
 
 .PHONY: build push test-integration run
 
-build:
-	docker build --tag ${ID}:$(VERSION) .
+PLATFORMS = linux/amd64,linux/arm64
 
+# Loads the image for this machine's platform only, for local testing
+build:
+	docker buildx build --load --tag ${ID}:$(VERSION) .
+
+# Builds every platform and pushes them under one multi-arch tag
 push:
-	docker push ${ID}:$(VERSION)
+	docker buildx build --platform $(PLATFORMS) --push --tag ${ID}:$(VERSION) .
 
 test-integration:
 	test/integration/run.sh
