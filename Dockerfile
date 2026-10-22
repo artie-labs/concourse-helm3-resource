@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 alpine/helm:4.3.1
+FROM alpine/helm:4.3.1
 # Helm supported version along with K8 version: https://helm.sh/docs/topics/version_skew/
 # List of Helm images: https://hub.docker.com/r/alpine/helm/tags
 
@@ -15,6 +15,8 @@ ARG AZURE_CLI_VERSION=2.91.0
 ARG HELM_DIFF_VERSION=3.15.15
 # helm-diff release signing key: https://github.com/databus23/helm-diff#helm-4
 ARG HELM_DIFF_KEY_FINGERPRINT=C5645EF47482257A1F806D2BEA17A2A206AFF8CD
+# Set by buildx from --platform: amd64 or arm64
+ARG TARGETARCH
 
 
 #gcloud path
@@ -28,11 +30,13 @@ RUN apk add --update --upgrade --no-cache jq bash curl git gettext gnupg libintl
     apk del .build-deps
 
 #install kubectl
-RUN curl -fsSL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && \
+RUN curl -fsSL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v${KUBERNETES_VERSION}/bin/linux/${TARGETARCH}/kubectl && \
     chmod +x /usr/local/bin/kubectl
 
 #install gcloud
-RUN wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz \
+# gcloud names its archives x86_64 and arm
+RUN GCLOUD_ARCH=$([ "${TARGETARCH}" = arm64 ] && echo arm || echo x86_64) && \
+    wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-${GCLOUD_ARCH}.tar.gz \
     -O /tmp/google-cloud-sdk.tar.gz | bash
 
 # For use with gke-gcloud-auth-plugin below
@@ -55,11 +59,11 @@ ADD assets /opt/resource
 RUN curl -fsSL https://github.com/databus23.gpg | gpg --dearmor > /tmp/helm-diff.gpg && \
   gpg --show-keys --with-colons /tmp/helm-diff.gpg | grep -q "^fpr:::::::::${HELM_DIFF_KEY_FINGERPRINT}:" && \
   helm plugin install --keyring /tmp/helm-diff.gpg \
-    https://github.com/databus23/helm-diff/releases/download/v${HELM_DIFF_VERSION}/diff-${HELM_DIFF_VERSION}-linux-amd64.tgz && \
+    https://github.com/databus23/helm-diff/releases/download/v${HELM_DIFF_VERSION}/diff-${HELM_DIFF_VERSION}-linux-${TARGETARCH}.tgz && \
   rm /tmp/helm-diff.gpg
 
 #install doctl
-RUN curl -sL -o /tmp/doctl.tar.gz https://github.com/digitalocean/doctl/releases/download/v${DOCTL_VERSION}/doctl-${DOCTL_VERSION}-linux-amd64.tar.gz && \
+RUN curl -sL -o /tmp/doctl.tar.gz https://github.com/digitalocean/doctl/releases/download/v${DOCTL_VERSION}/doctl-${DOCTL_VERSION}-linux-${TARGETARCH}.tar.gz && \
   tar -C /usr/local/bin -zxvf /tmp/doctl.tar.gz && \
   chmod +x /usr/local/bin/doctl
 
