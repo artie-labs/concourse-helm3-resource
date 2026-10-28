@@ -42,6 +42,14 @@ resource_types:
     tag: v2.0.0
 ```
 
+## Base image
+
+The image is built on `alpine:3.22`, not on `alpine/helm`. Alpine 3.24 ships musl 1.2.6, whose
+`pwrite()` uses the `pwritev2` syscall; Concourse workers up to 7.12 deny that syscall in their
+seccomp profile, so every sqlite write inside the container fails with `disk I/O error` and gcloud,
+which keeps its credentials in sqlite, crashes on its first call. Concourse 7.13 allows `pwritev2`.
+Until the workers run that, stay on an Alpine release with musl 1.2.5.
+
 ## Helm binary
 
 Since 2.0.0 the image does not use the `helm` from `alpine/helm`. The Dockerfile builds Helm

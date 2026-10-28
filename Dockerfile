@@ -3,7 +3,7 @@
 # process instead of once per object in Build, and objects of the same kind are applied concurrently.
 # HELM_REF pins the exact commit; HELM_VERSION is what `helm version` prints in build logs.
 ARG HELM_REPO=https://github.com/artie-labs/helm.git
-ARG HELM_REF=2e4c18fb6
+ARG HELM_REF=5d460fb64
 ARG HELM_VERSION=v4.3.1-fast
 
 # Runs on the build machine's own platform and cross-compiles for the target, so a multi-arch
@@ -23,9 +23,11 @@ WORKDIR /helm
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build VERSION=${HELM_VERSION} VERSION_METADATA= && \
     test -x bin/helm
 
-FROM alpine/helm:4.3.1
-# Helm supported version along with K8 version: https://helm.sh/docs/topics/version_skew/
-# List of Helm images: https://hub.docker.com/r/alpine/helm/tags
+# Alpine 3.22 rather than alpine/helm's 3.24 base: musl 1.2.6 (Alpine 3.24) implements pwrite() with the
+# pwritev2 syscall, which the seccomp profile of Concourse workers up to 7.12 denies. Every sqlite write
+# then fails with "disk I/O error", and gcloud (which keeps credentials in sqlite) crashes on its first
+# call. musl 1.2.5 uses pwrite64, which is allowed. The helm binary comes from the helm-build stage.
+FROM alpine:3.22
 
 LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 
@@ -34,7 +36,7 @@ LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 ARG KUBERNETES_VERSION=1.35.9
 ARG GCLOUD_VERSION=590.0.0
 ARG DOCTL_VERSION=1.186.0
-ARG AWSCLI_VERSION=2.34.63-r0
+ARG AWSCLI_VERSION=2.27.25-r0
 # azure-cli versions: https://pypi.org/project/azure-cli/#history
 ARG AZURE_CLI_VERSION=2.91.0
 ARG HELM_DIFF_VERSION=3.15.15
