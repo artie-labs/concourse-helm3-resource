@@ -42,15 +42,23 @@ resource_types:
     tag: v2.0.0
 ```
 
+## Base image
+
+The image is built on `alpine:3.22`, not on `alpine/helm`. Alpine 3.24 ships musl 1.2.6, whose
+`pwrite()` uses the `pwritev2` syscall; Concourse workers up to 7.12 deny that syscall in their
+seccomp profile, so every sqlite write inside the container fails with `disk I/O error` and gcloud,
+which keeps its credentials in sqlite, crashes on its first call. Concourse 7.13 allows `pwritev2`.
+Until the workers run that, stay on an Alpine release with musl 1.2.5.
+
 ## Helm binary
 
 Since 2.0.0 the image does not use the `helm` from `alpine/helm`. The Dockerfile builds Helm
 from [Artie's fork](https://github.com/artie-labs/helm) at the commit pinned in `HELM_REF`, which
-carries [artie-labs/helm#1](https://github.com/artie-labs/helm/pull/1). Stock Helm re-runs API
-discovery for every object it builds (two round trips each, three builds per upgrade) and applies
-objects one at a time; on a release with hundreds of objects deployed across a region boundary that
-was almost the whole upgrade. The fork runs discovery once and applies the objects of each kind
-concurrently. `helm version` in a build log shows `v4.3.1-fast` for this binary.
+carries the discovery fix from [artie-labs/helm#1](https://github.com/artie-labs/helm/pull/1) on top
+of v4.3.1 (branch `v4.3.1-discovery-cache`). Stock Helm re-runs API discovery for every object it
+builds (two round trips each, three builds per upgrade); on a release with hundreds of objects
+deployed across a region boundary that was most of the upgrade. The fork runs discovery once. It
+does not apply objects concurrently. `helm version` in a build log shows `v4.3.1-discovery-cache`.
 Override `HELM_REF` and `HELM_VERSION` as build args to try another commit.
 
 ## Upgrading to 2.0.0
