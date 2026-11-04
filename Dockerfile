@@ -4,6 +4,7 @@
 # still applied one at a time, as in stock Helm.
 # HELM_REF pins the exact commit; HELM_VERSION is what `helm version` prints in build logs.
 ARG HELM_REPO=https://github.com/artie-labs/helm.git
+# Look at https://github.com/helm/helm/compare/v4.3.1...artie-labs:helm:v4.3.1-discovery-cache to compare diff between this and helm SHA
 ARG HELM_REF=075314f7f
 ARG HELM_VERSION=v4.3.1-discovery-cache
 
