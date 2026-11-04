@@ -37,6 +37,7 @@ LABEL maintainer="Yann David (@Typositoire) <davidyann88@gmail>"
 ARG KUBERNETES_VERSION=1.35.9
 ARG GCLOUD_VERSION=590.0.0
 ARG DOCTL_VERSION=1.186.0
+# The newest aws-cli in Alpine 3.22's repo (2.34.x is only in 3.24, see the FROM line). Raise it with the Alpine version.
 ARG AWSCLI_VERSION=2.27.25-r0
 # azure-cli versions: https://pypi.org/project/azure-cli/#history
 ARG AZURE_CLI_VERSION=2.91.0
